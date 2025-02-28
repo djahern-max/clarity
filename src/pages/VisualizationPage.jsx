@@ -5,6 +5,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend
 } from 'recharts';
 import DataVortex from '../components/animations/DataVortex';
+import FinancialInsights from '../components/FinancialInsights';
 
 const VisualizationPage = () => {
   const [loading, setLoading] = useState(true);
@@ -12,7 +13,7 @@ const VisualizationPage = () => {
   const [rawData, setRawData] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState(null);
-  const [visualData, setVisualData] = useState(null);
+  const [visualData, setVisualData] = useState([]);
   const [animationPhase, setAnimationPhase] = useState(0);
 
   const { reportType } = useParams();
@@ -118,7 +119,6 @@ const VisualizationPage = () => {
     }
   };
 
-
   const handleAnalyzeWithAI = async () => {
     setAnalyzing(true);
     setAnimationPhase(1);
@@ -153,8 +153,12 @@ const VisualizationPage = () => {
           // Process the data for visualization
           processDataForVisualization();
 
-          // Set the AI analysis results
-          setAiAnalysis(analysisResult);
+          // Set the AI analysis results with default empty arrays for safety
+          setAiAnalysis({
+            summary: analysisResult.summary || "Analysis complete.",
+            insights: analysisResult.insights || [],
+            recommendations: analysisResult.recommendations || []
+          });
 
           // Complete the animation
           setAnimationPhase(3);
@@ -175,39 +179,44 @@ const VisualizationPage = () => {
 
     let processedData = [];
 
-    // Example processing for profit & loss data
-    if (reportType === 'profit-loss' && rawData.Rows && rawData.Rows.Row) {
-      // Extract income data
-      const incomeSection = rawData.Rows.Row.find(row => row.group === 'Income');
-      const expensesSection = rawData.Rows.Row.find(row => row.group === 'Expenses');
+    try {
+      // Example processing for profit & loss data
+      if (reportType === 'profit-loss' && rawData.Rows && rawData.Rows.Row) {
+        // Extract income data
+        const incomeSection = rawData.Rows.Row.find(row => row.group === 'Income');
+        const expensesSection = rawData.Rows.Row.find(row => row.group === 'Expenses');
 
-      if (incomeSection && incomeSection.Rows && incomeSection.Rows.Row) {
-        processedData = incomeSection.Rows.Row.map(row => ({
-          name: row.ColData[0].value,
-          value: parseFloat(row.ColData[1].value.replace(/,/g, ''))
-        }));
+        if (incomeSection && incomeSection.Rows && incomeSection.Rows.Row) {
+          processedData = incomeSection.Rows.Row.map(row => ({
+            name: row.ColData[0].value,
+            value: parseFloat(row.ColData[1].value.replace(/,/g, ''))
+          }));
+        }
+      } else if (reportType === 'balance-sheet' && rawData.Rows && rawData.Rows.Row) {
+        // Extract assets data
+        const assetsSection = rawData.Rows.Row.find(row => row.group === 'Assets');
+        if (assetsSection && assetsSection.Rows && assetsSection.Rows.Row) {
+          processedData = assetsSection.Rows.Row.map(row => ({
+            name: row.ColData[0].value,
+            value: parseFloat(row.ColData[1].value.replace(/,/g, ''))
+          }));
+        }
+      } else if (reportType === 'cash-flow' && rawData.Rows && rawData.Rows.Row) {
+        // Extract cash flow data
+        const operatingSection = rawData.Rows.Row.find(row => row.group === 'Operating');
+        if (operatingSection && operatingSection.Rows && operatingSection.Rows.Row) {
+          processedData = operatingSection.Rows.Row.map(row => ({
+            name: row.ColData[0].value,
+            value: parseFloat(row.ColData[1].value.replace(/,/g, ''))
+          }));
+        }
       }
-    } else if (reportType === 'balance-sheet' && rawData.Rows && rawData.Rows.Row) {
-      // Extract assets data
-      const assetsSection = rawData.Rows.Row.find(row => row.group === 'Assets');
-      if (assetsSection && assetsSection.Rows && assetsSection.Rows.Row) {
-        processedData = assetsSection.Rows.Row.map(row => ({
-          name: row.ColData[0].value,
-          value: parseFloat(row.ColData[1].value.replace(/,/g, ''))
-        }));
-      }
-    } else if (reportType === 'cash-flow' && rawData.Rows && rawData.Rows.Row) {
-      // Extract cash flow data
-      const operatingSection = rawData.Rows.Row.find(row => row.group === 'Operating');
-      if (operatingSection && operatingSection.Rows && operatingSection.Rows.Row) {
-        processedData = operatingSection.Rows.Row.map(row => ({
-          name: row.ColData[0].value,
-          value: parseFloat(row.ColData[1].value.replace(/,/g, ''))
-        }));
-      }
+    } catch (err) {
+      console.error('Error processing data for visualization:', err);
+      // Don't set an error state, just log it and continue with empty data
     }
 
-    setVisualData(processedData);
+    setVisualData(processedData || []);
   };
 
   const generateMockAIAnalysis = () => {
@@ -260,7 +269,13 @@ const VisualizationPage = () => {
       }
     };
 
-    setAiAnalysis(analyses[reportType] || analyses['profit-loss']);
+    const defaultAnalysis = {
+      summary: "Analysis completed successfully.",
+      insights: ["No specific insights available for this report type."],
+      recommendations: ["Consider consulting with a financial advisor for detailed analysis."]
+    };
+
+    setAiAnalysis(analyses[reportType] || defaultAnalysis);
   };
 
   const renderReportTypeTitle = () => {
@@ -323,38 +338,8 @@ const VisualizationPage = () => {
 
     return (
       <div className="animate-fadeIn">
-        <div className="bg-gradient-to-r from-purple-800 to-blue-800 rounded-lg p-6 mb-6 shadow-lg">
-          <h3 className="text-2xl font-bold text-white mb-4">AI Analysis</h3>
-
-          <div className="bg-gray-900 bg-opacity-50 rounded-lg p-4 mb-4">
-            <h4 className="text-xl font-semibold text-purple-300 mb-2">Summary</h4>
-            <p className="text-white">{aiAnalysis?.summary}</p>
-          </div>
-
-          <div className="bg-gray-900 bg-opacity-50 rounded-lg p-4 mb-4">
-            <h4 className="text-xl font-semibold text-purple-300 mb-2">Key Insights</h4>
-            <ul className="text-white space-y-2">
-              {aiAnalysis?.insights.map((insight, index) => (
-                <li key={index} className="flex items-start">
-                  <span className="text-purple-400 mr-2">•</span>
-                  <span>{insight}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="bg-gray-900 bg-opacity-50 rounded-lg p-4">
-            <h4 className="text-xl font-semibold text-purple-300 mb-2">Recommendations</h4>
-            <ul className="text-white space-y-2">
-              {aiAnalysis?.recommendations.map((rec, index) => (
-                <li key={index} className="flex items-start">
-                  <span className="text-green-400 mr-2">→</span>
-                  <span>{rec}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
+        {/* Use the FinancialInsights component */}
+        <FinancialInsights analysis={aiAnalysis} />
 
         {visualData && visualData.length > 0 && (
           <div className="bg-gray-800 rounded-lg p-6 mb-6">
