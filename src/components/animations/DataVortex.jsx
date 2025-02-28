@@ -1,77 +1,106 @@
 import React, { useEffect, useRef } from 'react';
 
-const DataVortex = ({ isActive, onAnimationComplete, children }) => {
-  const containerRef = useRef(null);
-  const jsonRef = useRef(null);
-  
+const DataVortex = () => {
+  const canvasRef = useRef(null);
+
   useEffect(() => {
-    if (isActive && containerRef.current && jsonRef.current) {
-      // Add vortex animation to the JSON container
-      jsonRef.current.classList.add('animate-vortex');
-      
-      // Create the particle effect
-      createVortexEffect();
-      
-      // Call the completion handler after animation finishes
-      const timer = setTimeout(() => {
-        if (onAnimationComplete) onAnimationComplete();
-      }, 2500);
-      
-      return () => clearTimeout(timer);
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+
+    // Set canvas dimensions
+    canvas.width = 200;
+    canvas.height = 200;
+
+    // Center coordinates
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+
+    // Array to store particles
+    const particles = [];
+
+    // Create particles
+    for (let i = 0; i < 100; i++) {
+      particles.push({
+        x: centerX,
+        y: centerY,
+        size: Math.random() * 3 + 1,
+        color: `hsl(${220 + Math.random() * 60}, 80%, ${50 + Math.random() * 40}%)`,
+        angle: Math.random() * Math.PI * 2,
+        distance: Math.random() * 80,
+        speed: 0.01 + Math.random() * 0.02,
+        opacity: 0,
+        fadeIn: true,
+        maxOpacity: 0.4 + Math.random() * 0.6
+      });
     }
-  }, [isActive, onAnimationComplete]);
-  
-  const createVortexEffect = () => {
-    if (!containerRef.current) return;
-    
-    const container = containerRef.current;
-    const rect = container.getBoundingClientRect();
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-    const numParticles = 100;
-    
-    // Clear previous particles
-    const existingParticles = container.querySelectorAll('.json-particle');
-    existingParticles.forEach(p => p.remove());
-    
-    for (let i = 0; i < numParticles; i++) {
-      const particle = document.createElement('div');
-      particle.classList.add('json-particle');
-      
-      // Random starting position around the container
-      const angle = Math.random() * Math.PI * 2;
-      const distance = 100 + Math.random() * 150;
-      const startX = centerX + Math.cos(angle) * distance;
-      const startY = centerY + Math.sin(angle) * distance;
-      
-      // All particles end at the center with some randomness
-      const endX = centerX + (Math.random() * 20 - 10);
-      const endY = centerY + (Math.random() * 20 - 10);
-      
-      // Set custom properties for the animation
-      particle.style.setProperty('--x-start', `${startX}px`);
-      particle.style.setProperty('--y-start', `${startY}px`);
-      particle.style.setProperty('--x-end', `${endX}px`);
-      particle.style.setProperty('--y-end', `${endY}px`);
-      
-      // Vary the animation duration and delay slightly
-      const duration = 1 + Math.random() * 1.5;
-      const delay = Math.random() * 0.5;
-      particle.style.animationDuration = `${duration}s`;
-      particle.style.animationDelay = `${delay}s`;
-      
-      container.appendChild(particle);
-    }
-  };
+
+    // Animation loop
+    let animationId;
+
+    const animate = () => {
+      // Clear canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Update and draw particles
+      particles.forEach(particle => {
+        // Update position
+        particle.angle += particle.speed;
+
+        // Calculate position based on angle and distance
+        const x = centerX + Math.cos(particle.angle) * particle.distance;
+        const y = centerY + Math.sin(particle.angle) * particle.distance;
+
+        // Update opacity for fade effect
+        if (particle.fadeIn) {
+          particle.opacity += 0.01;
+          if (particle.opacity >= particle.maxOpacity) {
+            particle.fadeIn = false;
+          }
+        } else {
+          particle.opacity -= 0.01;
+          if (particle.opacity <= 0.1) {
+            particle.fadeIn = true;
+          }
+        }
+
+        // Draw particle
+        ctx.beginPath();
+        ctx.arc(x, y, particle.size, 0, Math.PI * 2);
+        ctx.fillStyle = particle.color;
+        ctx.globalAlpha = particle.opacity;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+
+        // Draw connecting line to center
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.lineTo(x, y);
+        ctx.strokeStyle = particle.color;
+        ctx.globalAlpha = particle.opacity * 0.3;
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      });
+
+      // Call next frame
+      animationId = requestAnimationFrame(animate);
+    };
+
+    animate();
+
+    // Cleanup function
+    return () => {
+      cancelAnimationFrame(animationId);
+    };
+  }, []);
 
   return (
-    <div className="data-transformation-container" ref={containerRef}>
-      <div 
-        ref={jsonRef}
-        className={`json-container ${isActive ? 'json-active' : ''}`}
-      >
-        {children}
-      </div>
+    <div className="flex justify-center">
+      <canvas
+        ref={canvasRef}
+        className="rounded-full"
+        width="200"
+        height="200"
+      />
     </div>
   );
 };

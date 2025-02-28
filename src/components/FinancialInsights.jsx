@@ -1,64 +1,52 @@
 import React from 'react';
 
-const FinancialInsights = ({ analysis, loading = false }) => {
-  if (loading) {
+const FinancialInsights = ({ insights }) => {
+  // Handle error case
+  if (insights.error) {
     return (
-      <div className="bg-gradient-to-r from-purple-800 to-blue-800 rounded-lg p-6 mb-6 shadow-lg">
-        <h3 className="text-2xl font-bold text-white mb-4">AI Analysis</h3>
-        <div className="bg-gray-900 bg-opacity-50 rounded-lg p-6 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-300 mr-3"></div>
-          <p className="text-gray-300">Analyzing your financial data...</p>
-        </div>
+      <div className="bg-red-900 bg-opacity-30 p-4 rounded-lg">
+        <h3 className="text-xl font-bold text-white mb-2">Analysis Error</h3>
+        <p className="text-red-200">{insights.error}</p>
+        {insights.summary && <p className="mt-2 text-white">{insights.summary}</p>}
       </div>
     );
   }
 
-  // Debug the analysis object to console
-  console.log("Analysis object received:", analysis);
-
-  // Create fallback content in case the analysis is missing or incomplete
-  const summary = analysis?.summary || "Analysis complete.";
-  const insights = Array.isArray(analysis?.insights) ? analysis.insights : [];
-  const recommendations = Array.isArray(analysis?.recommendations) ? analysis.recommendations : [];
-
   return (
-    <div className="bg-gradient-to-r from-purple-800 to-blue-800 rounded-lg p-6 mb-6 shadow-lg">
-      <h3 className="text-2xl font-bold text-white mb-4">AI Analysis</h3>
-
-      <div className="bg-gray-900 bg-opacity-50 rounded-lg p-4 mb-4">
-        <h4 className="text-xl font-semibold text-purple-300 mb-2">Summary</h4>
-        <p className="text-white">{summary}</p>
+    <div className="text-white">
+      {/* Summary Section */}
+      <div className="mb-8 bg-blue-900 bg-opacity-30 p-6 rounded-lg">
+        <h3 className="text-xl font-bold mb-3 text-blue-200">Summary</h3>
+        <p className="text-white">
+          {insights.summary || "Analysis complete."}
+        </p>
       </div>
 
-      <div className="bg-gray-900 bg-opacity-50 rounded-lg p-4 mb-4">
-        <h4 className="text-xl font-semibold text-purple-300 mb-2">Key Insights</h4>
-        {insights.length > 0 ? (
-          <ul className="text-white space-y-2">
-            {insights.map((insight, index) => (
-              <li key={index} className="flex items-start">
-                <span className="text-purple-400 mr-2">•</span>
-                <span>{insight}</span>
-              </li>
+      {/* Key Insights Section */}
+      <div className="mb-8 bg-purple-900 bg-opacity-30 p-6 rounded-lg">
+        <h3 className="text-xl font-bold mb-3 text-purple-200">Key Insights</h3>
+        {insights.insights && insights.insights.length > 0 ? (
+          <ul className="list-disc pl-5 space-y-2">
+            {insights.insights.map((insight, index) => (
+              <li key={index} className="text-white">{insight}</li>
             ))}
           </ul>
         ) : (
-          <p className="text-white">No insights available. Try refreshing or selecting a different report.</p>
+          <p className="text-gray-300">No insights available.</p>
         )}
       </div>
 
-      <div className="bg-gray-900 bg-opacity-50 rounded-lg p-4">
-        <h4 className="text-xl font-semibold text-purple-300 mb-2">Recommendations</h4>
-        {recommendations.length > 0 ? (
-          <ul className="text-white space-y-2">
-            {recommendations.map((rec, index) => (
-              <li key={index} className="flex items-start">
-                <span className="text-green-400 mr-2">→</span>
-                <span>{rec}</span>
-              </li>
+      {/* Recommendations Section */}
+      <div className="bg-green-900 bg-opacity-30 p-6 rounded-lg">
+        <h3 className="text-xl font-bold mb-3 text-green-200">Recommendations</h3>
+        {insights.recommendations && insights.recommendations.length > 0 ? (
+          <ul className="list-disc pl-5 space-y-2">
+            {insights.recommendations.map((recommendation, index) => (
+              <li key={index} className="text-white">{recommendation}</li>
             ))}
           </ul>
         ) : (
-          <p className="text-white">No recommendations available. Try refreshing or selecting a different report.</p>
+          <p className="text-gray-300">No recommendations available.</p>
         )}
       </div>
     </div>

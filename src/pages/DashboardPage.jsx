@@ -13,7 +13,7 @@ const DashboardPage = () => {
     // Extract realm_id from URL if present
     const params = new URLSearchParams(location.search);
     const realmIdFromUrl = params.get('realm_id');
-    
+
     if (realmIdFromUrl) {
       setRealmId(realmIdFromUrl);
       fetchCompanyName(realmIdFromUrl);
@@ -27,7 +27,7 @@ const DashboardPage = () => {
       setLoading(true);
       const response = await fetch('/api/financial/connection-status');
       const data = await response.json();
-      
+
       if (data.connected && data.realmId) {
         setRealmId(data.realmId);
         fetchCompanyName(data.realmId);
@@ -46,7 +46,7 @@ const DashboardPage = () => {
     try {
       const response = await fetch(`/api/financial/company-name/${id}`);
       const data = await response.json();
-      
+
       if (data.companyName) {
         setCompanyName(data.companyName);
       }
@@ -89,7 +89,7 @@ const DashboardPage = () => {
         <div className="bg-red-900 bg-opacity-50 p-6 rounded-lg max-w-xl">
           <h2 className="text-2xl font-bold text-white mb-4">Error</h2>
           <p className="text-gray-300">{error}</p>
-          <button 
+          <button
             onClick={() => navigate('/')}
             className="mt-6 bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded"
           >
@@ -115,20 +115,20 @@ const DashboardPage = () => {
               </span>
             )}
           </div>
-          <button 
+          <button
             onClick={handleDisconnect}
             className="text-gray-400 hover:text-red-400 text-sm underline"
           >
             Disconnect QuickBooks
           </button>
         </div>
-        
+
         {/* Main content */}
         <div className="mb-12">
           <h2 className="text-3xl font-bold text-white mb-8 text-center">
             Choose a financial report to visualize
           </h2>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <button
               onClick={() => handleVisualize('profit-loss')}
@@ -138,7 +138,7 @@ const DashboardPage = () => {
               <h3 className="text-2xl font-bold mb-4">Profit & Loss</h3>
               <p className="text-emerald-100">Analyze revenue, expenses, and profitability with AI-powered insights</p>
             </button>
-            
+
             <button
               onClick={() => handleVisualize('cash-flow')}
               className="bg-gradient-to-br from-blue-600 to-blue-800 hover:from-blue-500 hover:to-blue-700 text-white rounded-xl p-8 text-center transition duration-200 hover:shadow-lg transform hover:scale-105"
@@ -147,7 +147,7 @@ const DashboardPage = () => {
               <h3 className="text-2xl font-bold mb-4">Cash Flow</h3>
               <p className="text-blue-100">Track your money movement and liquidity with advanced analytics</p>
             </button>
-            
+
             <button
               onClick={() => handleVisualize('balance-sheet')}
               className="bg-gradient-to-br from-purple-600 to-purple-800 hover:from-purple-500 hover:to-purple-700 text-white rounded-xl p-8 text-center transition duration-200 hover:shadow-lg transform hover:scale-105"
@@ -158,7 +158,7 @@ const DashboardPage = () => {
             </button>
           </div>
         </div>
-        
+
         <footer className="text-center text-gray-500 text-sm">
           <p>Clarity © 2025 RYZE.ai</p>
         </footer>
