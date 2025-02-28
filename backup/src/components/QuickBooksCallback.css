@@ -1,0 +1,96 @@
+/* QuickBooksCallback.css */
+.quickbooks-callback {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
+    padding: 2rem;
+}
+
+.callback-status {
+    background-color: white;
+    border-radius: 10px;
+    padding: 2rem;
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 500px;
+}
+
+.processing-spinner {
+    width: 60px;
+    height: 60px;
+    border: 5px solid rgba(52, 152, 219, 0.2);
+    border-top-color: #3498db;
+    border-radius: 50%;
+    margin: 0 auto 1.5rem;
+    animation: spin 1s linear infinite;
+}
+
+.success-icon {
+    width: 60px;
+    height: 60px;
+    background-color: #2ecc71;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    margin: 0 auto 1.5rem;
+    animation: scale-in 0.5s ease-out;
+}
+
+.error-icon {
+    width: 60px;
+    height: 60px;
+    background-color: #e74c3c;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    margin: 0 auto 1.5rem;
+    animation: scale-in 0.5s ease-out;
+}
+
+.callback-status h2 {
+    margin-bottom: 1rem;
+    color: #2c3e50;
+}
+
+.callback-status p {
+    color: #7f8c8d;
+    margin-bottom: 1rem;
+}
+
+.redirect-message {
+    font-style: italic;
+    font-size: 0.9rem;
+    margin-top: 2rem;
+}
+
+.callback-status.success h2 {
+    color: #27ae60;
+}
+
+.callback-status.error h2 {
+    color: #c0392b;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes scale-in {
+    from {
+        transform: scale(0);
+    }
+
+    to {
+        transform: scale(1);
+    }
+}

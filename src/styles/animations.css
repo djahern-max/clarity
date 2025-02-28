@@ -1,0 +1,70 @@
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes vortex {
+  0% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(0, -30%) scale(0.6) rotate(180deg);
+    opacity: 0.7;
+  }
+  100% {
+    transform: translate(0, -50%) scale(0.2) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes dataParticle {
+  0% {
+    transform: translate(var(--x-start), var(--y-start)) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(
+      calc(var(--x-start) * 0.5 + var(--x-end) * 0.5), 
+      calc(var(--y-start) * 0.5 + var(--y-end) * 0.5)
+    ) scale(0.7);
+    opacity: 0.7;
+  }
+  100% {
+    transform: translate(var(--x-end), var(--y-end)) scale(0.4);
+    opacity: 0;
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 1s ease-out forwards;
+}
+
+.animate-vortex {
+  animation: vortex 1.5s ease-in-out forwards;
+}
+
+.data-transformation-container {
+  position: relative;
+  width: 100%;
+  min-height: 300px;
+  overflow: hidden;
+}
+
+.json-particle {
+  position: absolute;
+  background-color: #8884d8;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  opacity: 0;
+  animation: dataParticle 2s ease-out forwards;
+}
+
+.json-particle:nth-child(3n) {
+  background-color: #82ca9d;
+}
+
+.json-particle:nth-child(3n+1) {
+  background-color: #ffc658;
+}

@@ -1,13 +1,14 @@
-// DataFetcher.jsx - Component for fetching financial data
-import React, { useState } from 'react';
+// DataFetcher.jsx - Component for fetching financial data from QuickBooks
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import './DataFetcher.css';
+import quickBooksService from '../services/QuickBooksService';
 
 const DataFetcher = ({ apiConfig, onDataFetched }) => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [connectionStatus, setConnectionStatus] = useState(null);
     const [reportType, setReportType] = useState('profit-loss');
     const [dateRange, setDateRange] = useState(() => {
         const today = new Date();
@@ -24,6 +25,26 @@ const DataFetcher = ({ apiConfig, onDataFetched }) => {
         { id: 'balance-sheet', name: 'Financial Position Snapshot', endpoint: 'balance-sheet', description: 'View what you own and what you owe' },
         { id: 'cash-flow', name: 'Cash Movement Tracker', endpoint: 'cash-flow', description: 'Track the flow of cash in and out of your business' },
     ];
+
+    // Check connection status when component mounts
+    useEffect(() => {
+        if (apiConfig.realmId) {
+            checkConnectionStatus();
+        }
+    }, [apiConfig.realmId]);
+
+    const checkConnectionStatus = async () => {
+        try {
+            const status = await quickBooksService.checkConnectionStatus(apiConfig.realmId);
+            setConnectionStatus(status);
+        } catch (error) {
+            console.error('Error checking connection status:', error);
+            setConnectionStatus({
+                connected: false,
+                reason: 'Error checking connection: ' + error.message
+            });
+        }
+    };
 
     const handleDateChange = (e) => {
         const { name, value } = e.target;
@@ -62,12 +83,42 @@ const DataFetcher = ({ apiConfig, onDataFetched }) => {
         setError(null);
 
         try {
-            const url = `${apiConfig.baseUrl}/api/financial/statements/${selectedReport.endpoint}?realm_id=${apiConfig.realmId}&start_date=${dateRange.startDate}&end_date=${dateRange.endDate}`;
+            let data;
 
-            const response = await axios.get(url);
+            // Fetch data based on report type
+            switch (reportType) {
+                case 'profit-loss':
+                    data = await quickBooksService.getProfitAndLoss(
+                        apiConfig.realmId,
+                        dateRange.startDate,
+                        dateRange.endDate
+                    );
+                    break;
+
+                case 'balance-sheet':
+                    data = await quickBooksService.getBalanceSheet(
+                        apiConfig.realmId,
+                        dateRange.endDate // Using end date as "as of" date
+                    );
+                    break;
+
+                case 'cash-flow':
+                    data = await quickBooksService.getCashFlow(
+                        apiConfig.realmId,
+                        dateRange.startDate,
+                        dateRange.endDate
+                    );
+                    break;
+
+                default:
+                    throw new Error('Invalid report type');
+            }
+
+            // Log raw data for debugging
+            console.log('Raw financial data:', data);
 
             // Pass the data up to the parent component
-            onDataFetched(response.data, getPeriodDescription());
+            onDataFetched(data, getPeriodDescription());
 
             // Navigate to the transform page
             navigate('/transform');
@@ -85,6 +136,14 @@ const DataFetcher = ({ apiConfig, onDataFetched }) => {
                 <h1>Explore Your Financial Data</h1>
                 <p className="subtitle">Select a report type and time period to begin</p>
             </div>
+
+            {connectionStatus && !connectionStatus.connected && (
+                <div className="connection-warning">
+                    <h3>Not Connected to QuickBooks</h3>
+                    <p>{connectionStatus.reason || 'You need to connect to QuickBooks before fetching data.'}</p>
+                    <a href="/settings" className="settings-link">Go to Settings to Connect</a>
+                </div>
+            )}
 
             <div className="report-options">
                 {reportOptions.map(option => (
@@ -144,7 +203,7 @@ const DataFetcher = ({ apiConfig, onDataFetched }) => {
                 <button
                     className="fetch-button"
                     onClick={fetchData}
-                    disabled={loading || !apiConfig.realmId}
+                    disabled={loading || !apiConfig.realmId || (connectionStatus && !connectionStatus.connected)}
                 >
                     {loading ? (
                         <>

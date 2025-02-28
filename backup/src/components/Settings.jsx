@@ -5,7 +5,7 @@ import './Settings.css';
 
 const Settings = ({ apiConfig, onSave }) => {
     const [formData, setFormData] = useState({
-        baseUrl: apiConfig.baseUrl || 'https://agent1.ryze.ai',
+        baseUrl: apiConfig.baseUrl || 'https://clarity.ryze.ai',
         realmId: apiConfig.realmId || ''
     });
     const [testStatus, setTestStatus] = useState(null);
@@ -98,7 +98,7 @@ const Settings = ({ apiConfig, onSave }) => {
                             name="baseUrl"
                             value={formData.baseUrl}
                             onChange={handleChange}
-                            placeholder="Enter API base URL (e.g., https://agent1.ryze.ai)"
+                            placeholder="Enter API base URL (e.g., https://clarity.ryze.ai)"
                         />
                         <p className="field-help">
                             The base URL for the RYZE.ai API that connects to your QuickBooks data.
