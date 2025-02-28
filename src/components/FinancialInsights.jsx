@@ -12,42 +12,54 @@ const FinancialInsights = ({ analysis, loading = false }) => {
       </div>
     );
   }
-  
-  if (!analysis) {
-    return null;
-  }
+
+  // Debug the analysis object to console
+  console.log("Analysis object received:", analysis);
+
+  // Create fallback content in case the analysis is missing or incomplete
+  const summary = analysis?.summary || "Analysis complete.";
+  const insights = Array.isArray(analysis?.insights) ? analysis.insights : [];
+  const recommendations = Array.isArray(analysis?.recommendations) ? analysis.recommendations : [];
 
   return (
     <div className="bg-gradient-to-r from-purple-800 to-blue-800 rounded-lg p-6 mb-6 shadow-lg">
       <h3 className="text-2xl font-bold text-white mb-4">AI Analysis</h3>
-      
+
       <div className="bg-gray-900 bg-opacity-50 rounded-lg p-4 mb-4">
         <h4 className="text-xl font-semibold text-purple-300 mb-2">Summary</h4>
-        <p className="text-white">{analysis.summary}</p>
+        <p className="text-white">{summary}</p>
       </div>
-      
+
       <div className="bg-gray-900 bg-opacity-50 rounded-lg p-4 mb-4">
         <h4 className="text-xl font-semibold text-purple-300 mb-2">Key Insights</h4>
-        <ul className="text-white space-y-2">
-          {analysis.insights.map((insight, index) => (
-            <li key={index} className="flex items-start">
-              <span className="text-purple-400 mr-2">•</span>
-              <span>{insight}</span>
-            </li>
-          ))}
-        </ul>
+        {insights.length > 0 ? (
+          <ul className="text-white space-y-2">
+            {insights.map((insight, index) => (
+              <li key={index} className="flex items-start">
+                <span className="text-purple-400 mr-2">•</span>
+                <span>{insight}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-white">No insights available. Try refreshing or selecting a different report.</p>
+        )}
       </div>
-      
+
       <div className="bg-gray-900 bg-opacity-50 rounded-lg p-4">
         <h4 className="text-xl font-semibold text-purple-300 mb-2">Recommendations</h4>
-        <ul className="text-white space-y-2">
-          {analysis.recommendations.map((rec, index) => (
-            <li key={index} className="flex items-start">
-              <span className="text-green-400 mr-2">→</span>
-              <span>{rec}</span>
-            </li>
-          ))}
-        </ul>
+        {recommendations.length > 0 ? (
+          <ul className="text-white space-y-2">
+            {recommendations.map((rec, index) => (
+              <li key={index} className="flex items-start">
+                <span className="text-green-400 mr-2">→</span>
+                <span>{rec}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-white">No recommendations available. Try refreshing or selecting a different report.</p>
+        )}
       </div>
     </div>
   );
