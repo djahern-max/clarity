@@ -1,0 +1,220 @@
+/* DataFetcher.css */
+.data-fetcher-container {
+    background-color: var(--white);
+    border-radius: var(--rounded-lg);
+    box-shadow: var(--shadow);
+    padding: 2rem;
+}
+
+.data-fetcher-header {
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.data-fetcher-header h1 {
+    color: var(--dark);
+    margin-bottom: 0.5rem;
+    font-size: 2rem;
+}
+
+.subtitle {
+    color: var(--medium);
+    font-size: 1.1rem;
+}
+
+.report-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.report-option {
+    background-color: var(--lighter);
+    border-radius: var(--rounded);
+    padding: 1.5rem;
+    cursor: pointer;
+    display: flex;
+    position: relative;
+    transition: var(--transition);
+    border: 2px solid transparent;
+}
+
+.report-option:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow);
+}
+
+.report-option.selected {
+    border-color: var(--primary);
+    background-color: var(--white);
+    box-shadow: var(--shadow);
+}
+
+.report-option-icon {
+    font-size: 2rem;
+    margin-right: 1.5rem;
+}
+
+.report-option-details {
+    flex: 1;
+}
+
+.report-option-details h3 {
+    margin-bottom: 0.5rem;
+    color: var(--dark);
+}
+
+.report-option-details p {
+    color: var(--medium);
+    font-size: 0.9rem;
+}
+
+.selected-indicator {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: var(--primary);
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.date-selector {
+    background-color: var(--lighter);
+    border-radius: var(--rounded);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.date-selector h2 {
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+    color: var(--dark);
+}
+
+.date-inputs {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.date-field {
+    flex: 1;
+}
+
+.date-field label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--medium);
+    font-weight: 500;
+}
+
+.date-field input {
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: var(--rounded-sm);
+    border: 1px solid #ddd;
+    font-size: 1rem;
+}
+
+.error-message {
+    background-color: rgba(231, 76, 60, 0.1);
+    border-left: 4px solid var(--danger);
+    padding: 1rem;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    color: var(--danger);
+}
+
+.error-icon {
+    margin-right: 0.75rem;
+    font-size: 1.2rem;
+}
+
+.fetch-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.fetch-button {
+    background-color: var(--primary);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--rounded);
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    transition: var(--transition);
+}
+
+.fetch-button:hover {
+    background-color: var(--primary-dark);
+}
+
+.fetch-button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.button-icon {
+    margin-right: 0.75rem;
+    font-size: 1.2rem;
+}
+
+.loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 0.75rem;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.config-reminder {
+    margin-top: 1.5rem;
+    text-align: center;
+}
+
+.config-reminder p {
+    color: var(--medium);
+    font-size: 0.9rem;
+}
+
+.reminder-icon {
+    display: inline-block;
+    margin-right: 0.5rem;
+    color: var(--info);
+}
+
+.config-reminder a {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.config-reminder a:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+    .date-inputs {
+        flex-direction: column;
+        gap: 1rem;
+    }
+}

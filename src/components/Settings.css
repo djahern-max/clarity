@@ -1,0 +1,112 @@
+Settings.css
+
+/* Settings.css */
+.settings-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.settings-header {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.settings-header h1 {
+    margin-bottom: 0.5rem;
+    color: var(--dark);
+}
+
+.settings-card,
+.help-card {
+    background-color: var(--white);
+    border-radius: var(--rounded-lg);
+    box-shadow: var(--shadow);
+    padding: 2rem;
+}
+
+.settings-card h2,
+.help-card h2 {
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--light);
+    color: var(--dark);
+}
+
+.settings-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-group label {
+    font-weight: 600;
+    color: var(--dark);
+}
+
+.form-group input {
+    padding: 0.75rem;
+    border-radius: var(--rounded-sm);
+    border: 1px solid #ddd;
+    font-size: 1rem;
+}
+
+.field-help {
+    color: var(--medium);
+    font-size: 0.9rem;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.test-button,
+.save-button {
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--rounded);
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    border: none;
+}
+
+.test-button {
+    background-color: var(--light);
+    color: var(--dark);
+}
+
+.save-button {
+    background-color: var(--primary);
+    color: white;
+}
+
+.test-button:hover {
+    background-color: #dfe6e9;
+}
+
+.save-button:hover {
+    background-color: var(--primary-dark);
+}
+
+.test-button:disabled,
+.save-button:disabled {
+    background-color: #ccc;
+    color: #666;
+    cursor: not-allowed;
+}
+
+.status-message {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    border-radius: var(--rounded-sm);
+    margin-top: 1rem;
+}
