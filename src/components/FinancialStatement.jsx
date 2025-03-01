@@ -47,7 +47,7 @@ const FinancialStatement = ({ data, title }) => {
                                     <h5 className="text-lg font-medium text-blue-200 mb-2">{subsection.name}</h5>
                                     <table className="w-full">
                                         <tbody>
-                                            {subsection.items.map((item, itemIdx) => (
+                                            {subsection.items && subsection.items.map((item, itemIdx) => (
                                                 <tr key={itemIdx} className="border-b border-gray-700">
                                                     <td className="py-2 text-gray-300">{item.name}</td>
                                                     <td className="py-2 text-right text-gray-300">{formatCurrency(item.amount)}</td>
@@ -62,20 +62,24 @@ const FinancialStatement = ({ data, title }) => {
                                 </div>
                             ))
                         ) : (
-                            <table className="w-full">
-                                <tbody>
-                                    {section.items.map((item, itemIdx) => (
-                                        <tr key={itemIdx} className="border-b border-gray-700">
-                                            <td className="py-2 text-gray-300">{item.name}</td>
-                                            <td className="py-2 text-right text-gray-300">{formatCurrency(item.amount)}</td>
+                            section.items ? (
+                                <table className="w-full">
+                                    <tbody>
+                                        {section.items.map((item, itemIdx) => (
+                                            <tr key={itemIdx} className="border-b border-gray-700">
+                                                <td className="py-2 text-gray-300">{item.name}</td>
+                                                <td className="py-2 text-right text-gray-300">{formatCurrency(item.amount)}</td>
+                                            </tr>
+                                        ))}
+                                        <tr className="font-semibold">
+                                            <td className="py-2 text-white">Total {section.name}</td>
+                                            <td className="py-2 text-right text-white">{formatCurrency(section.total)}</td>
                                         </tr>
-                                    ))}
-                                    <tr className="font-semibold">
-                                        <td className="py-2 text-white">Total {section.name}</td>
-                                        <td className="py-2 text-right text-white">{formatCurrency(section.total)}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                                    </tbody>
+                                </table>
+                            ) : (
+                                <p className="text-gray-400">No items available</p>
+                            )
                         )}
                     </div>
                 ))}
@@ -101,6 +105,6 @@ const FinancialStatement = ({ data, title }) => {
             )}
         </div>
     );
-};
+}
 
 export default FinancialStatement;

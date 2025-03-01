@@ -1,12 +1,15 @@
 // components/AITransformationDemo.jsx
 import React, { useState } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { dracula } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import * as PrismStyles from 'react-syntax-highlighter/dist/esm/styles/prism';
 import FinancialStatement from './FinancialStatement';
 
-const AITransformationDemo = ({ rawData, structuredData, analysisData }) => {
-    const [currentStep, setCurrentStep] = useState(1);
-    const [showProcessing, setShowProcessing] = useState(false);
+const AITransformationDemo = ({ rawData, structuredData, analysisData, onGenerateStructure, onGenerateAnalysis }) => {
+    const [showRawData, setShowRawData] = useState(true);
+    const [showStructured, setShowStructured] = useState(false);
+    const [showAnalysis, setShowAnalysis] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [processingMessage, setProcessingMessage] = useState('');
 
     // Function to format JSON for display
     const formatJsonForDisplay = (jsonData) => {
@@ -17,151 +20,201 @@ const AITransformationDemo = ({ rawData, structuredData, analysisData }) => {
         }
     };
 
-    const goToNextStep = (nextStep) => {
-        setShowProcessing(true);
+    const handleTransformClick = async () => {
+        setProcessingMessage('AI transforming raw data into structured financial statement...');
+        setIsProcessing(true);
+
+        // Call the parent function to generate structured data if it hasn't been done already
+        if (!structuredData && onGenerateStructure) {
+            await onGenerateStructure();
+        }
+
+        // Simulate AI processing time (remove this in production if actual API call takes time)
         setTimeout(() => {
-            setShowProcessing(false);
-            setCurrentStep(nextStep);
-        }, 1500); // Show processing for 1.5 seconds
+            setIsProcessing(false);
+            setShowRawData(false);
+            setShowStructured(true);
+        }, 1500);
+    };
+
+    const handleAnalyzeClick = async () => {
+        setProcessingMessage('AI analyzing financial data for insights and recommendations...');
+        setIsProcessing(true);
+
+        // Call the parent function to generate analysis if it hasn't been done already
+        if (!analysisData && onGenerateAnalysis) {
+            await onGenerateAnalysis();
+        }
+
+        // Simulate AI processing time
+        setTimeout(() => {
+            setIsProcessing(false);
+            setShowStructured(false);
+            setShowAnalysis(true);
+        }, 1500);
+    };
+
+    const handleBackToRawClick = () => {
+        setShowStructured(false);
+        setShowAnalysis(false);
+        setShowRawData(true);
+    };
+
+    const handleBackToStructuredClick = () => {
+        setShowRawData(false);
+        setShowAnalysis(false);
+        setShowStructured(true);
     };
 
     return (
         <div className="bg-gray-800 rounded-lg overflow-hidden">
-            {/* Step navigation */}
-            <div className="flex border-b border-gray-700">
-                <button
-                    onClick={() => setCurrentStep(1)}
-                    className={`py-3 px-6 flex-1 text-center transition duration-200 
-            ${currentStep === 1
-                            ? 'bg-blue-600 text-white font-bold'
-                            : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
-                >
-                    1. Raw JSON Data
-                </button>
-                <button
-                    onClick={() => setCurrentStep(2)}
-                    className={`py-3 px-6 flex-1 text-center transition duration-200 
-            ${currentStep === 2
-                            ? 'bg-blue-600 text-white font-bold'
-                            : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
-                >
-                    2. AI-Structured Statement
-                </button>
-                <button
-                    onClick={() => setCurrentStep(3)}
-                    className={`py-3 px-6 flex-1 text-center transition duration-200 
-            ${currentStep === 3
-                            ? 'bg-blue-600 text-white font-bold'
-                            : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
-                >
-                    3. AI Analysis
-                </button>
-            </div>
-
-            {/* AI Processing Animation */}
-            {showProcessing && (
-                <div className="ai-processing-animation flex flex-col items-center justify-center p-10">
-                    <div className="pulse-circle animate-pulse h-16 w-16 rounded-full bg-blue-500 mb-4"></div>
-                    <p className="text-white text-lg">AI processing data...</p>
+            {/* Processing animation overlay */}
+            {isProcessing && (
+                <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
+                    <div className="text-center p-8 rounded-lg">
+                        <div className="animate-pulse flex space-x-2 mb-4 justify-center">
+                            <div className="h-3 w-3 bg-blue-400 rounded-full"></div>
+                            <div className="h-3 w-3 bg-blue-400 rounded-full"></div>
+                            <div className="h-3 w-3 bg-blue-400 rounded-full"></div>
+                        </div>
+                        <p className="text-white text-xl font-bold">{processingMessage}</p>
+                        <p className="text-blue-300 mt-2">Powered by AI</p>
+                    </div>
                 </div>
             )}
 
-            {/* Step content */}
-            {!showProcessing && (
+            {/* Raw Data View */}
+            {showRawData && (
                 <div className="p-6">
-                    {currentStep === 1 && (
-                        <div>
-                            <div className="mb-4">
-                                <h3 className="text-2xl font-bold text-white mb-2">Raw QuickBooks JSON Data</h3>
-                                <p className="text-gray-400 mb-4">
-                                    This is the raw JSON data received from QuickBooks' API. Without AI,
-                                    you would need to manually parse this complex structure to extract meaningful information.
-                                </p>
-                            </div>
-                            <div className="bg-gray-900 rounded overflow-hidden">
-                                <SyntaxHighlighter
-                                    language="json"
-                                    style={dracula}
-                                    customStyle={{
-                                        maxHeight: '500px',
-                                        overflowY: 'auto',
-                                        fontSize: '14px',
-                                        padding: '20px'
-                                    }}
-                                >
-                                    {formatJsonForDisplay(rawData)}
-                                </SyntaxHighlighter>
-                            </div>
-                            <div className="mt-6 text-right">
-                                <button
-                                    onClick={() => goToNextStep(2)}
-                                    className="bg-blue-600 hover:bg-blue-500 text-white py-2 px-4 rounded inline-flex items-center"
-                                >
-                                    <span>See the AI Transformation</span>
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                                    </svg>
-                                </button>
-                            </div>
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-2xl font-bold text-white">Raw QuickBooks JSON Data</h3>
+                        <div className="bg-blue-600 rounded-full px-3 py-1 text-white text-sm font-bold">
+                            Step 1 of 3
                         </div>
-                    )}
+                    </div>
+                    <p className="text-gray-400 mb-6">
+                        This is the raw JSON data received from QuickBooks' API. It's complex and difficult to interpret without processing.
+                    </p>
 
-                    {currentStep === 2 && (
-                        <div>
-                            <div className="mb-4">
-                                <h3 className="text-2xl font-bold text-white mb-2">AI-Structured Financial Statement</h3>
-                                <p className="text-gray-400 mb-4">
-                                    The AI has transformed the complex JSON into a clean, structured financial statement.
-                                    Notice how the data is now organized into proper accounting categories and formatted for readability.
-                                </p>
-                            </div>
-                            <FinancialStatement data={structuredData} />
-                            <div className="mt-6 text-right">
-                                <button
-                                    onClick={() => goToNextStep(3)}
-                                    className="bg-blue-600 hover:bg-blue-500 text-white py-2 px-4 rounded inline-flex items-center"
-                                >
-                                    <span>View AI Analysis</span>
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                                    </svg>
-                                </button>
-                            </div>
+                    <div className="bg-gray-900 rounded overflow-hidden mb-6">
+                        <SyntaxHighlighter
+                            language="json"
+                            style={PrismStyles.dracula}
+                            customStyle={{
+                                maxHeight: '400px',
+                                overflowY: 'auto',
+                                fontSize: '14px',
+                                padding: '20px'
+                            }}
+                        >
+                            {formatJsonForDisplay(rawData)}
+                        </SyntaxHighlighter>
+                    </div>
+
+                    <div className="flex justify-center">
+                        <button
+                            onClick={handleTransformClick}
+                            className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-3 px-8 rounded-lg font-bold text-lg flex items-center shadow-lg transform transition hover:scale-105"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            Transform with AI
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Structured Data View */}
+            {showStructured && structuredData && (
+                <div className="p-6">
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-2xl font-bold text-white">AI-Structured Financial Statement</h3>
+                        <div className="bg-blue-600 rounded-full px-3 py-1 text-white text-sm font-bold">
+                            Step 2 of 3
                         </div>
-                    )}
+                    </div>
+                    <p className="text-gray-400 mb-6">
+                        The AI has transformed the complex JSON into this clean, structured financial statement.
+                        Notice how the data is now organized into proper accounting categories and formatted for readability.
+                    </p>
 
-                    {currentStep === 3 && (
-                        <div>
-                            <div className="mb-4">
-                                <h3 className="text-2xl font-bold text-white mb-2">AI Financial Analysis</h3>
-                                <p className="text-gray-400 mb-4">
-                                    Beyond just structuring the data, the AI provides valuable insights and identifies trends in your financial data.
-                                </p>
-                            </div>
-                            <div className="bg-gray-900 p-6 rounded">
-                                {analysisData && (
-                                    <>
-                                        <h4 className="text-xl font-bold text-blue-300 mb-4">Summary</h4>
-                                        <p className="text-gray-300 mb-6">{analysisData.summary}</p>
+                    <div className="mb-6">
+                        <FinancialStatement data={structuredData} />
+                    </div>
 
-                                        <h4 className="text-xl font-bold text-blue-300 mb-4">Key Insights</h4>
-                                        <ul className="list-disc pl-6 space-y-2 mb-6">
-                                            {analysisData.insights && analysisData.insights.map((insight, idx) => (
-                                                <li key={idx} className="text-gray-300">{insight}</li>
-                                            ))}
-                                        </ul>
+                    <div className="flex justify-center space-x-4">
+                        <button
+                            onClick={handleBackToRawClick}
+                            className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded-lg font-medium"
+                        >
+                            ← Back to Raw Data
+                        </button>
+                        <button
+                            onClick={handleAnalyzeClick}
+                            className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-3 px-8 rounded-lg font-bold text-lg flex items-center shadow-lg transform transition hover:scale-105"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                            </svg>
+                            Analyze with AI
+                        </button>
+                    </div>
+                </div>
+            )}
 
-                                        <h4 className="text-xl font-bold text-blue-300 mb-4">Recommendations</h4>
-                                        <ul className="list-disc pl-6 space-y-2">
-                                            {analysisData.recommendations && analysisData.recommendations.map((rec, idx) => (
-                                                <li key={idx} className="text-gray-300">{rec}</li>
-                                            ))}
-                                        </ul>
-                                    </>
-                                )}
-                            </div>
+            {/* Analysis View */}
+            {showAnalysis && analysisData && (
+                <div className="p-6">
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-2xl font-bold text-white">AI Financial Analysis</h3>
+                        <div className="bg-blue-600 rounded-full px-3 py-1 text-white text-sm font-bold">
+                            Step 3 of 3
                         </div>
-                    )}
+                    </div>
+                    <p className="text-gray-400 mb-6">
+                        Beyond just structuring the data, the AI has identified key insights and provided recommendations based on your financial data.
+                    </p>
+
+                    <div className="bg-gray-900 p-6 rounded mb-6">
+                        <div className="mb-6">
+                            <h4 className="text-xl font-bold text-blue-300 mb-4">Summary</h4>
+                            <p className="text-gray-300">{analysisData.summary}</p>
+                        </div>
+
+                        <div className="mb-6">
+                            <h4 className="text-xl font-bold text-blue-300 mb-4">Key Insights</h4>
+                            <ul className="list-disc pl-6 space-y-2">
+                                {analysisData.insights && analysisData.insights.map((insight, idx) => (
+                                    <li key={idx} className="text-gray-300">{insight}</li>
+                                ))}
+                            </ul>
+                        </div>
+
+                        <div>
+                            <h4 className="text-xl font-bold text-blue-300 mb-4">Recommendations</h4>
+                            <ul className="list-disc pl-6 space-y-2">
+                                {analysisData.recommendations && analysisData.recommendations.map((rec, idx) => (
+                                    <li key={idx} className="text-gray-300">{rec}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div className="flex justify-center space-x-4">
+                        <button
+                            onClick={handleBackToRawClick}
+                            className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded-lg font-medium"
+                        >
+                            ← Back to Raw Data
+                        </button>
+                        <button
+                            onClick={handleBackToStructuredClick}
+                            className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded-lg font-medium"
+                        >
+                            ← Back to Structured Statement
+                        </button>
+                    </div>
                 </div>
             )}
         </div>

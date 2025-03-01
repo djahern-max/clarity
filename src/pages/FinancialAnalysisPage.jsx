@@ -7,6 +7,7 @@ import ComparativeFinancialStatement from '../components/ComparativeFinancialSta
 import LoadingSpinner from '../utils/LoadingSpinner';
 import ErrorMessage from '../utils/ErrorMessage';
 
+
 const FinancialAnalysisPage = () => {
     const { statementType } = useParams();
     const location = useLocation();
@@ -35,6 +36,7 @@ const FinancialAnalysisPage = () => {
         }
     }, [location]);
 
+    // Modify the handleDateRangeChange function to not automatically structure/analyze
     const handleDateRangeChange = async (dateRanges) => {
         setLoading(true);
         setError(null);
@@ -54,7 +56,7 @@ const FinancialAnalysisPage = () => {
                 );
 
                 setComparativeData(comparative);
-                setRawData(null); // Clear single-period data
+                setRawData(null);
                 setStructuredData(null);
                 setAnalysisData(null);
             } else {
@@ -70,31 +72,17 @@ const FinancialAnalysisPage = () => {
                     };
                 }
 
-                // Get raw data
-                const rawData = await QuickBooksService.getFinancialStatement(
+                // Get raw data only
+                const rawDataResponse = await QuickBooksService.getFinancialStatement(
                     statementType,
                     realmId,
                     params
                 );
 
-                setRawData(rawData);
-
-                // Structure the data
-                const structured = await QuickBooksService.structureFinancialData(
-                    statementType,
-                    rawData
-                );
-
-                setStructuredData(structured);
-
-                // Analyze the data
-                const analysis = await QuickBooksService.analyzeFinancialData(
-                    statementType,
-                    rawData
-                );
-
-                setAnalysisData(analysis);
-                setComparativeData(null); // Clear comparative data
+                setRawData(rawDataResponse);
+                // Don't automatically get structured or analysis data
+                setStructuredData(null);
+                setAnalysisData(null);
             }
         } catch (error) {
             console.error('Error fetching financial data:', error);
@@ -103,6 +91,45 @@ const FinancialAnalysisPage = () => {
             setLoading(false);
         }
     };
+
+    // Add these functions to handle the AI transformation steps
+    const handleGenerateStructure = async () => {
+        if (!rawData) return;
+
+        try {
+            // Structure the data
+            const structured = await QuickBooksService.structureFinancialData(
+                statementType,
+                rawData
+            );
+
+            setStructuredData(structured);
+            return structured;
+        } catch (error) {
+            console.error('Error structuring data:', error);
+            setError('Failed to structure financial data with AI.');
+        }
+    };
+
+    const handleGenerateAnalysis = async () => {
+        if (!rawData) return;
+
+        try {
+            // Analyze the data
+            const analysis = await QuickBooksService.analyzeFinancialData(
+                statementType,
+                rawData
+            );
+
+            setAnalysisData(analysis);
+            return analysis;
+        } catch (error) {
+            console.error('Error analyzing data:', error);
+            setError('Failed to analyze financial data with AI.');
+        }
+    };
+
+
 
     const getStatementTitle = () => {
         switch (statementType) {
@@ -139,28 +166,33 @@ const FinancialAnalysisPage = () => {
                 )}
 
                 {/* Display appropriate content based on mode */}
-                {!loading && !error && (
-                    <>
-                        {isComparing && comparativeData ? (
-                            <ComparativeFinancialStatement
-                                data={comparativeData}
-                                title={getStatementTitle()}
-                            />
-                        ) : rawData && structuredData ? (
-                            <AITransformationDemo
-                                rawData={rawData}
-                                structuredData={structuredData}
-                                analysisData={analysisData}
-                            />
-                        ) : (
-                            <div className="bg-gray-800 rounded-lg p-8 text-center">
-                                <p className="text-gray-300">
-                                    Select a date range to view financial data
-                                </p>
-                            </div>
-                        )}
-                    </>
-                )}
+                // This floating JSX block is causing a problem
+                {
+                    !loading && !error && (
+                        <>
+                            {isComparing && comparativeData ? (
+                                <ComparativeFinancialStatement
+                                    data={comparativeData}
+                                    title={getStatementTitle()}
+                                />
+                            ) : rawData ? (
+                                <AITransformationDemo
+                                    rawData={rawData}
+                                    structuredData={structuredData}
+                                    analysisData={analysisData}
+                                    onGenerateStructure={handleGenerateStructure}
+                                    onGenerateAnalysis={handleGenerateAnalysis}
+                                />
+                            ) : (
+                                <div className="bg-gray-800 rounded-lg p-8 text-center">
+                                    <p className="text-gray-300">
+                                        Select a date range to view financial data
+                                    </p>
+                                </div>
+                            )}
+                        </>
+                    )
+                }
             </div>
         </div>
     );
