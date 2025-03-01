@@ -16,6 +16,7 @@ const VisualizationPage = () => {
   const [aiAnalysis, setAiAnalysis] = useState(null);
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisError, setAnalysisError] = useState(null);
+  const [structuredView, setStructuredView] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -75,6 +76,234 @@ const VisualizationPage = () => {
       // Add a reconnect button
       setReconnectNeeded(true);
     }
+  };
+
+  // Add this function
+  const handleStructureData = () => {
+    setStructuredView(!structuredView);
+  };
+
+  // Add function to render structured statement
+  const renderStructuredStatement = () => {
+    try {
+      // For profit/loss report
+      if (reportType === 'profit-loss') {
+        return renderProfitLossStatement();
+      }
+      // For balance sheet
+      else if (reportType === 'balance-sheet') {
+        return renderBalanceSheet();
+      }
+      // For cash flow
+      else if (reportType === 'cash-flow') {
+        return renderCashFlow();
+      }
+      return "Unknown report type";
+    } catch (e) {
+      console.error("Error rendering structured view:", e);
+      return "Error structuring data: " + e.message;
+    }
+  };
+
+  // Functions to render each report type
+  const renderProfitLossStatement = () => {
+    const header = data.Header || {};
+    const rows = data.Rows?.Row || [];
+
+    // Function to extract values from rows
+    const extractValues = (rows, sectionName) => {
+      let result = [];
+      for (const row of rows) {
+        if (row.group === sectionName) {
+          const subRows = row.Rows?.Row || [];
+          for (const subRow of subRows) {
+            if (subRow.ColData && subRow.ColData.length >= 2) {
+              result.push({
+                name: subRow.ColData[0].value,
+                amount: subRow.ColData[1].value
+              });
+            }
+          }
+        }
+      }
+      return result;
+    };
+
+    // Extract revenue, expenses, etc.
+    const revenue = extractValues(rows, "Income");
+    const expenses = extractValues(rows, "Expenses");
+
+    // Format the statement
+    let statement = `\n================ PROFIT & LOSS STATEMENT ================\n`;
+    statement += `Period: ${header.StartPeriod} to ${header.EndPeriod}\n`;
+    statement += `Basis: ${header.ReportBasis}\n\n`;
+
+    statement += `REVENUE\n`;
+    statement += `========\n`;
+    let totalRevenue = 0;
+    revenue.forEach(item => {
+      const amount = parseFloat(item.amount.replace(/,/g, ''));
+      totalRevenue += isNaN(amount) ? 0 : amount;
+      statement += `${item.name.padEnd(40)} $${item.amount.padStart(12)}\n`;
+    });
+    statement += `${'TOTAL REVENUE'.padEnd(40)} $${totalRevenue.toFixed(2).padStart(12)}\n\n`;
+
+    statement += `EXPENSES\n`;
+    statement += `========\n`;
+    let totalExpenses = 0;
+    expenses.forEach(item => {
+      const amount = parseFloat(item.amount.replace(/,/g, ''));
+      totalExpenses += isNaN(amount) ? 0 : amount;
+      statement += `${item.name.padEnd(40)} $${item.amount.padStart(12)}\n`;
+    });
+    statement += `${'TOTAL EXPENSES'.padEnd(40)} $${totalExpenses.toFixed(2).padStart(12)}\n\n`;
+
+    const netIncome = totalRevenue - totalExpenses;
+    statement += `${'NET INCOME'.padEnd(40)} $${netIncome.toFixed(2).padStart(12)}\n`;
+    statement += `===========================================================\n`;
+
+    return statement;
+  };
+
+  // Similar functions for balance sheet and cash flow
+  const renderBalanceSheet = () => {
+    const header = data.Header || {};
+    const rows = data.Rows?.Row || [];
+
+    // Function to extract values from rows
+    const extractValues = (rows, sectionName) => {
+      let result = [];
+      for (const row of rows) {
+        if (row.group === sectionName) {
+          const subRows = row.Rows?.Row || [];
+          for (const subRow of subRows) {
+            if (subRow.ColData && subRow.ColData.length >= 2) {
+              result.push({
+                name: subRow.ColData[0].value,
+                amount: subRow.ColData[1].value
+              });
+            }
+          }
+        }
+      }
+      return result;
+    };
+
+    // Extract assets, liabilities, equity
+    const assets = extractValues(rows, "Assets");
+    const liabilities = extractValues(rows, "Liabilities");
+    const equity = extractValues(rows, "Equity");
+
+    // Format the statement
+    let statement = `\n================ BALANCE SHEET ================\n`;
+    statement += `As of: ${header.EndPeriod}\n`;
+    statement += `Basis: ${header.ReportBasis}\n\n`;
+
+    statement += `ASSETS\n`;
+    statement += `======\n`;
+    let totalAssets = 0;
+    assets.forEach(item => {
+      const amount = parseFloat(item.amount.replace(/,/g, ''));
+      totalAssets += isNaN(amount) ? 0 : amount;
+      statement += `${item.name.padEnd(40)} $${item.amount.padStart(12)}\n`;
+    });
+    statement += `${'TOTAL ASSETS'.padEnd(40)} $${totalAssets.toFixed(2).padStart(12)}\n\n`;
+
+    statement += `LIABILITIES\n`;
+    statement += `===========\n`;
+    let totalLiabilities = 0;
+    liabilities.forEach(item => {
+      const amount = parseFloat(item.amount.replace(/,/g, ''));
+      totalLiabilities += isNaN(amount) ? 0 : amount;
+      statement += `${item.name.padEnd(40)} $${item.amount.padStart(12)}\n`;
+    });
+    statement += `${'TOTAL LIABILITIES'.padEnd(40)} $${totalLiabilities.toFixed(2).padStart(12)}\n\n`;
+
+    statement += `EQUITY\n`;
+    statement += `======\n`;
+    let totalEquity = 0;
+    equity.forEach(item => {
+      const amount = parseFloat(item.amount.replace(/,/g, ''));
+      totalEquity += isNaN(amount) ? 0 : amount;
+      statement += `${item.name.padEnd(40)} $${item.amount.padStart(12)}\n`;
+    });
+    statement += `${'TOTAL EQUITY'.padEnd(40)} $${totalEquity.toFixed(2).padStart(12)}\n\n`;
+
+    statement += `${'TOTAL LIABILITIES AND EQUITY'.padEnd(40)} $${(totalLiabilities + totalEquity).toFixed(2).padStart(12)}\n`;
+    statement += `==================================================\n`;
+
+    return statement;
+  };
+
+
+  const renderCashFlow = () => {
+    const header = data.Header || {};
+    const rows = data.Rows?.Row || [];
+
+    // Function to extract values from rows
+    const extractValues = (rows, sectionName) => {
+      let result = [];
+      for (const row of rows) {
+        if (row.group === sectionName) {
+          const subRows = row.Rows?.Row || [];
+          for (const subRow of subRows) {
+            if (subRow.ColData && subRow.ColData.length >= 2) {
+              result.push({
+                name: subRow.ColData[0].value,
+                amount: subRow.ColData[1].value
+              });
+            }
+          }
+        }
+      }
+      return result;
+    };
+
+    // Extract different cash flow sections
+    const operating = extractValues(rows, "Operating");
+    const investing = extractValues(rows, "Investing");
+    const financing = extractValues(rows, "Financing");
+
+    // Format the statement
+    let statement = `\n================ CASH FLOW STATEMENT ================\n`;
+    statement += `Period: ${header.StartPeriod} to ${header.EndPeriod}\n`;
+    statement += `Basis: ${header.ReportBasis}\n\n`;
+
+    statement += `OPERATING ACTIVITIES\n`;
+    statement += `====================\n`;
+    let totalOperating = 0;
+    operating.forEach(item => {
+      const amount = parseFloat(item.amount.replace(/,/g, ''));
+      totalOperating += isNaN(amount) ? 0 : amount;
+      statement += `${item.name.padEnd(40)} $${item.amount.padStart(12)}\n`;
+    });
+    statement += `${'NET CASH FROM OPERATIONS'.padEnd(40)} $${totalOperating.toFixed(2).padStart(12)}\n\n`;
+
+    statement += `INVESTING ACTIVITIES\n`;
+    statement += `====================\n`;
+    let totalInvesting = 0;
+    investing.forEach(item => {
+      const amount = parseFloat(item.amount.replace(/,/g, ''));
+      totalInvesting += isNaN(amount) ? 0 : amount;
+      statement += `${item.name.padEnd(40)} $${item.amount.padStart(12)}\n`;
+    });
+    statement += `${'NET CASH FROM INVESTING'.padEnd(40)} $${totalInvesting.toFixed(2).padStart(12)}\n\n`;
+
+    statement += `FINANCING ACTIVITIES\n`;
+    statement += `====================\n`;
+    let totalFinancing = 0;
+    financing.forEach(item => {
+      const amount = parseFloat(item.amount.replace(/,/g, ''));
+      totalFinancing += isNaN(amount) ? 0 : amount;
+      statement += `${item.name.padEnd(40)} $${item.amount.padStart(12)}\n`;
+    });
+    statement += `${'NET CASH FROM FINANCING'.padEnd(40)} $${totalFinancing.toFixed(2).padStart(12)}\n\n`;
+
+    const netChange = totalOperating + totalInvesting + totalFinancing;
+    statement += `${'NET CHANGE IN CASH'.padEnd(40)} $${netChange.toFixed(2).padStart(12)}\n`;
+    statement += `=======================================================\n`;
+
+    return statement;
   };
 
   // Add this state variable
@@ -515,18 +744,30 @@ const VisualizationPage = () => {
           </div>
         )}
 
+
         {/* Raw Financial Data Display */}
         {data && (
           <div className="bg-gray-800 rounded-xl p-6 mb-8">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-white">Raw Financial Data</h2>
+              <button
+                onClick={handleStructureData}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-md flex items-center"
+              >
+                <span role="img" aria-label="Structure" className="mr-2">📋</span>
+                Structure Data
+              </button>
             </div>
             <p className="text-gray-400 mb-4">
               This is the raw JSON data from your QuickBooks account.
             </p>
             <div className="bg-gray-700 p-4 rounded">
-              <pre className="text-gray-300 overflow-auto max-h-96 text-sm">
-                {JSON.stringify(data, null, 2)}
+              <pre className="text-gray-300 text-xs font-mono" style={{
+                whiteSpace: structuredView ? 'pre-wrap' : 'normal',
+                wordBreak: 'break-all',
+                overflowWrap: 'break-word'
+              }}>
+                {structuredView ? renderStructuredStatement() : JSON.stringify(data)}
               </pre>
             </div>
           </div>

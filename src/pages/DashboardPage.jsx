@@ -85,7 +85,7 @@ const DashboardPage = () => {
   };
 
   const handleVisualize = (reportType) => {
-    navigate(`/visualize/${reportType}?realm_id=${realmId}`);
+    navigate(`/financial/${reportType}?realm_id=${realmId}`);
   };
 
   if (loading) {

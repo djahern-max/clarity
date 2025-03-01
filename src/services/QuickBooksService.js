@@ -159,6 +159,84 @@ class QuickBooksService {
   }
 
   /**
+  * Structure raw financial data using AI
+  * @param {string} statementType - Type of statement (profit-loss, balance-sheet, cash-flow)
+  * @param {Object} rawData - Raw financial data from QuickBooks
+  * @returns {Promise<Object>} Structured financial statement
+  */
+  static async structureFinancialData(statementType, rawData) {
+    try {
+      const response = await fetch(`/api/financial/structure/${statementType}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(rawData)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`API structuring error: ${errorText}`);
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error(`Failed to structure ${statementType} data:`, error);
+      throw error;
+    }
+  }
+
+  /**
+ * Get comparative financial statements for two periods
+ * @param {string} statementType - Type of statement (profit-loss, balance-sheet, cash-flow)
+ * @param {string} realmId - Optional realm ID
+ * @param {Object} currentPeriod - Current period dates { startDate, endDate }
+ * @param {Object} previousPeriod - Previous period dates { startDate, endDate }
+ * @returns {Promise<Object>} Comparative statement data
+ */
+  static async getComparativeStatement(statementType, realmId = '', currentPeriod, previousPeriod) {
+    try {
+      let queryParams = new URLSearchParams();
+
+      if (realmId) {
+        queryParams.append('realm_id', realmId);
+      }
+
+      // Add current period params
+      if (currentPeriod) {
+        queryParams.append('current_start_date', currentPeriod.startDate);
+        queryParams.append('current_end_date', currentPeriod.endDate);
+      }
+
+      // Add previous period params
+      if (previousPeriod) {
+        queryParams.append('previous_start_date', previousPeriod.startDate);
+        queryParams.append('previous_end_date', previousPeriod.endDate);
+      }
+
+      const endpoint = `/api/financial/comparative/${statementType}?${queryParams.toString()}`;
+
+      console.log(`Calling endpoint: ${endpoint}`);
+
+      const response = await fetch(endpoint);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`API response error: ${errorText}`);
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error(`Failed to get comparative ${statementType} data:`, error);
+      throw error;
+    }
+  }
+
+
+
+  /**
    * Disconnect from QuickBooks
    * @param {string} realmId - Realm ID to disconnect
    * @returns {Promise<Object>} Result of disconnect operation
