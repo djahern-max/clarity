@@ -166,7 +166,7 @@ const FinancialAnalysisPage = () => {
                 )}
 
                 {/* Display appropriate content based on mode */}
-                // This floating JSX block is causing a problem
+
                 {
                     !loading && !error && (
                         <>

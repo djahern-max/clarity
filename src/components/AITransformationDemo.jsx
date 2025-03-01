@@ -1,7 +1,7 @@
 // components/AITransformationDemo.jsx
 import React, { useState } from 'react';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import * as PrismStyles from 'react-syntax-highlighter/dist/esm/styles/prism';
+import RawJumbledJSON from './RawJumbledJSON';
+import AIFinancialStatement from './AIFinancialStatement';
 import FinancialStatement from './FinancialStatement';
 
 const AITransformationDemo = ({ rawData, structuredData, analysisData, onGenerateStructure, onGenerateAnalysis }) => {
@@ -10,48 +10,62 @@ const AITransformationDemo = ({ rawData, structuredData, analysisData, onGenerat
     const [showAnalysis, setShowAnalysis] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [processingMessage, setProcessingMessage] = useState('');
-
-    // Function to format JSON for display
-    const formatJsonForDisplay = (jsonData) => {
-        try {
-            return JSON.stringify(jsonData, null, 2);
-        } catch (e) {
-            return "Error formatting JSON data";
-        }
-    };
+    const [processingStage, setProcessingStage] = useState(0);
 
     const handleTransformClick = async () => {
-        setProcessingMessage('AI transforming raw data into structured financial statement...');
+        setProcessingMessage('AI transforming unstructured data into organized financial statement...');
         setIsProcessing(true);
+        setProcessingStage(1);
 
         // Call the parent function to generate structured data if it hasn't been done already
         if (!structuredData && onGenerateStructure) {
             await onGenerateStructure();
         }
 
-        // Simulate AI processing time (remove this in production if actual API call takes time)
+        // Simulate AI processing stages
         setTimeout(() => {
-            setIsProcessing(false);
-            setShowRawData(false);
-            setShowStructured(true);
-        }, 1500);
+            setProcessingMessage('Identifying financial patterns in raw data...');
+            setProcessingStage(2);
+
+            setTimeout(() => {
+                setProcessingMessage('Structuring data into accounting categories...');
+                setProcessingStage(3);
+
+                setTimeout(() => {
+                    setIsProcessing(false);
+                    setShowRawData(false);
+                    setShowStructured(true);
+                }, 800);
+            }, 1000);
+        }, 1200);
     };
 
     const handleAnalyzeClick = async () => {
         setProcessingMessage('AI analyzing financial data for insights and recommendations...');
         setIsProcessing(true);
+        setProcessingStage(1);
 
         // Call the parent function to generate analysis if it hasn't been done already
         if (!analysisData && onGenerateAnalysis) {
             await onGenerateAnalysis();
         }
 
-        // Simulate AI processing time
+        // Simulate AI processing stages
         setTimeout(() => {
-            setIsProcessing(false);
-            setShowStructured(false);
-            setShowAnalysis(true);
-        }, 1500);
+            setProcessingMessage('Calculating performance metrics and identifying trends...');
+            setProcessingStage(2);
+
+            setTimeout(() => {
+                setProcessingMessage('Generating financial recommendations...');
+                setProcessingStage(3);
+
+                setTimeout(() => {
+                    setIsProcessing(false);
+                    setShowStructured(false);
+                    setShowAnalysis(true);
+                }, 800);
+            }, 1000);
+        }, 1200);
     };
 
     const handleBackToRawClick = () => {
@@ -71,7 +85,15 @@ const AITransformationDemo = ({ rawData, structuredData, analysisData, onGenerat
             {/* Processing animation overlay */}
             {isProcessing && (
                 <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
-                    <div className="text-center p-8 rounded-lg">
+                    <div className="text-center p-8 rounded-lg max-w-md">
+                        <div className="mb-4">
+                            <div className="relative h-2 bg-gray-700 rounded-full overflow-hidden">
+                                <div
+                                    className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-purple-600 transition-all duration-300"
+                                    style={{ width: `${(processingStage / 3) * 100}%` }}
+                                ></div>
+                            </div>
+                        </div>
                         <div className="animate-pulse flex space-x-2 mb-4 justify-center">
                             <div className="h-3 w-3 bg-blue-400 rounded-full"></div>
                             <div className="h-3 w-3 bg-blue-400 rounded-full"></div>
@@ -93,22 +115,11 @@ const AITransformationDemo = ({ rawData, structuredData, analysisData, onGenerat
                         </div>
                     </div>
                     <p className="text-gray-400 mb-6">
-                        This is the raw JSON data received from QuickBooks' API. It's complex and difficult to interpret without processing.
+                        This is the raw unstructured JSON data received from QuickBooks' API. Without AI processing, this data is difficult to interpret and use for financial decision-making.
                     </p>
 
                     <div className="bg-gray-900 rounded overflow-hidden mb-6">
-                        <SyntaxHighlighter
-                            language="json"
-                            style={PrismStyles.dracula}
-                            customStyle={{
-                                maxHeight: '400px',
-                                overflowY: 'auto',
-                                fontSize: '14px',
-                                padding: '20px'
-                            }}
-                        >
-                            {formatJsonForDisplay(rawData)}
-                        </SyntaxHighlighter>
+                        <RawJumbledJSON rawData={rawData} />
                     </div>
 
                     <div className="flex justify-center">
@@ -126,7 +137,7 @@ const AITransformationDemo = ({ rawData, structuredData, analysisData, onGenerat
             )}
 
             {/* Structured Data View */}
-            {showStructured && structuredData && (
+            {showStructured && (
                 <div className="p-6">
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="text-2xl font-bold text-white">AI-Structured Financial Statement</h3>
@@ -135,12 +146,13 @@ const AITransformationDemo = ({ rawData, structuredData, analysisData, onGenerat
                         </div>
                     </div>
                     <p className="text-gray-400 mb-6">
-                        The AI has transformed the complex JSON into this clean, structured financial statement.
+                        The AI has transformed the complex JSON blob into this clean, structured financial statement.
                         Notice how the data is now organized into proper accounting categories and formatted for readability.
                     </p>
 
                     <div className="mb-6">
-                        <FinancialStatement data={structuredData} />
+                        {/* Use AIFinancialStatement instead of the traditional component */}
+                        <AIFinancialStatement rawData={rawData} />
                     </div>
 
                     <div className="flex justify-center space-x-4">
