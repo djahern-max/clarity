@@ -1,7 +1,6 @@
 /**
  * Service for interacting with QuickBooks API via our backend
  */
-import API_BASE from '../config/api';
 
 class QuickBooksService {
   /**
@@ -10,7 +9,7 @@ class QuickBooksService {
    */
   static async getAuthUrl() {
     try {
-      const response = await fetch(`${API_BASE}/auth-url`);
+      const response = await fetch(`/api/financial/auth-url`);
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
@@ -43,6 +42,35 @@ class QuickBooksService {
     }
   }
 
+  // Add to QuickBooksService.js
+  static handleAuthError(error) {
+    // Check if error is related to authentication
+    if (error.message && error.message.includes('401')) {
+      // Clear any stored credentials
+      localStorage.removeItem('qbCredentials');
+
+      // Redirect to reconnect page
+      window.location.href = '/reconnect';
+
+      return true; // Handled
+    }
+    return false; // Not handled
+  }
+
+  // Then update your getFinancialStatement method
+  static async getFinancialStatement(statementType, realmId = '', params = {}) {
+    try {
+      // ... existing code ...
+    } catch (error) {
+      // Check if this is an auth error and handle appropriately
+      if (this.handleAuthError(error)) {
+        throw new Error('Authentication expired. Please reconnect to QuickBooks.');
+      }
+      console.error(`Failed to get ${statementType} data:`, error);
+      throw error;
+    }
+  }
+
   /**
    * Get company name from QuickBooks
    * @param {string} realmId - Realm ID
@@ -67,16 +95,65 @@ class QuickBooksService {
    * @param {string} realmId - Optional realm ID
    * @returns {Promise<Object>} Statement data
    */
-  static async getFinancialStatement(statementType, realmId = '') {
+  static async getFinancialStatement(statementType, realmId = '', params = {}) {
     try {
-      const queryParams = realmId ? `?realm_id=${realmId}` : '';
-      const response = await fetch(`/api/financial/statements/${statementType}${queryParams}`);
+      let queryParams = new URLSearchParams();
+
+      if (realmId) {
+        queryParams.append('realm_id', realmId);
+      }
+
+      // Add any additional parameters (like as_of_date for balance sheet)
+      Object.entries(params).forEach(([key, value]) => {
+        if (value) {
+          queryParams.append(key, value);
+        }
+      });
+
+      const endpoint = `/api/financial/statements/${statementType}?${queryParams.toString()}`;
+
+      console.log(`Calling endpoint: ${endpoint}`);
+
+      const response = await fetch(endpoint);
+
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`API response error: ${errorText}`);
         throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
+
       return await response.json();
     } catch (error) {
       console.error(`Failed to get ${statementType} data:`, error);
+      throw error;
+    }
+  }
+
+  /**
+ * Analyze financial data with AI
+ * @param {string} reportType - Type of report (profit-loss, balance-sheet, cash-flow)
+ * @param {Object} data - Financial data to analyze
+ * @returns {Promise<Object>} Analysis results
+ */
+  static async analyzeFinancialData(reportType, data) {
+    try {
+      const response = await fetch(`/api/financial/analyze/${reportType}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ data })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`API analysis error: ${errorText}`);
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error(`Failed to analyze ${reportType} data:`, error);
       throw error;
     }
   }
@@ -101,5 +178,7 @@ class QuickBooksService {
     }
   }
 }
+
+
 
 export default QuickBooksService;

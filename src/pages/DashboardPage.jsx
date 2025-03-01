@@ -16,6 +16,7 @@ const DashboardPage = () => {
 
     if (realmIdFromUrl) {
       setRealmId(realmIdFromUrl);
+      localStorage.setItem('realmId', realmIdFromUrl); // Store in localStorage
       fetchCompanyName(realmIdFromUrl);
     } else {
       checkConnection();
@@ -30,9 +31,11 @@ const DashboardPage = () => {
 
       if (data.connected && data.realmId) {
         setRealmId(data.realmId);
+        localStorage.setItem('realmId', data.realmId); // Store in localStorage
         fetchCompanyName(data.realmId);
       } else {
         // Not connected, redirect to landing page
+        localStorage.removeItem('realmId'); // Clear localStorage
         navigate('/');
       }
     } catch (error) {
@@ -60,13 +63,24 @@ const DashboardPage = () => {
 
   const handleDisconnect = async () => {
     try {
-      await fetch(`/api/financial/disconnect/${realmId}`, {
+      setLoading(true);
+      const response = await fetch(`/api/financial/disconnect/${realmId}`, {
         method: 'POST'
       });
+
+      const data = await response.json();
+
+      // Even if the API call succeeds, clear local storage and navigate to home
+      localStorage.removeItem('realmId');
+
+      // Log response for debugging
+      console.log('Disconnect response:', data);
+
       navigate('/');
     } catch (error) {
       console.error('Error disconnecting:', error);
       setError('Failed to disconnect from QuickBooks');
+      setLoading(false);
     }
   };
 

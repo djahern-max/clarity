@@ -1,33 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import FinancialInsights from '../components/FinancialInsights';
-import DataVortex from '../components/animations/DataVortex';
 
 const VisualizationPage = () => {
   const { reportType } = useParams();
   const [data, setData] = useState(null);
-  const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [analyzeLoading, setAnalyzeLoading] = useState(false);
   const [error, setError] = useState(null);
   const [realmId, setRealmId] = useState('');
+
+  // Date range state
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+
+  // AI Analysis state
+  const [aiAnalysis, setAiAnalysis] = useState(null);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [analysisError, setAnalysisError] = useState(null);
+
   const navigate = useNavigate();
   const location = useLocation();
-
-  // Array of loading messages to cycle through
-  const loadingMessages = [
-    "Analyzing financial patterns...",
-    "Extracting key financial insights...",
-    "Calculating performance metrics...",
-    "Identifying growth opportunities...",
-    "Evaluating financial health...",
-    "Detecting spending patterns...",
-    "Comparing with industry benchmarks...",
-    "Generating recommendations...",
-    "Finalizing your personalized analysis..."
-  ];
-
-  const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
 
   // Title mapping for different report types
   const reportTitles = {
@@ -37,6 +28,19 @@ const VisualizationPage = () => {
   };
 
   useEffect(() => {
+    // Set default date range to current month
+    const today = new Date();
+    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+    // Format dates as YYYY-MM-DD
+    const formatDate = (date) => {
+      return date.toISOString().split('T')[0];
+    };
+
+    setStartDate(formatDate(firstDayOfMonth));
+    setEndDate(formatDate(lastDayOfMonth));
+
     // Extract realm_id from URL
     const params = new URLSearchParams(location.search);
     const realmIdFromUrl = params.get('realm_id');
@@ -45,13 +49,13 @@ const VisualizationPage = () => {
       setRealmId(realmIdFromUrl);
       // Store in localStorage for persistence
       localStorage.setItem('realmId', realmIdFromUrl);
-      fetchFinancialData(realmIdFromUrl, reportType);
+      console.log("Set realmId from URL:", realmIdFromUrl); // Debug log
     } else {
       // Try to get from localStorage
       const storedRealmId = localStorage.getItem('realmId');
       if (storedRealmId) {
         setRealmId(storedRealmId);
-        fetchFinancialData(storedRealmId, reportType);
+        console.log("Set realmId from localStorage:", storedRealmId); // Debug log
       } else {
         setError('No company connection found');
         setLoading(false);
@@ -59,32 +63,59 @@ const VisualizationPage = () => {
     }
   }, [reportType, location]);
 
-  // Cycle through loading messages
-  useEffect(() => {
-    let interval;
+  // Add this function inside your VisualizationPage component
+  const handleAuthenticationError = (error) => {
+    if (error.message && error.message.includes('401')) {
+      // Clear stored realm ID
+      localStorage.removeItem('realmId');
 
-    if (analyzeLoading) {
-      interval = setInterval(() => {
-        setCurrentMessageIndex((prevIndex) =>
-          (prevIndex + 1) % loadingMessages.length
-        );
-      }, 3000); // Change message every 3 seconds
+      // Show error
+      setError('Your QuickBooks authentication has expired. Please reconnect.');
+
+      // Add a reconnect button
+      setReconnectNeeded(true);
+    }
+  };
+
+  // Add this state variable
+  const [reconnectNeeded, setReconnectNeeded] = useState(false);
+
+  // Add a reconnect function
+  const handleReconnect = async () => {
+    try {
+      const response = await fetch('/api/financial/auth-url');
+      const data = await response.json();
+
+      if (data.auth_url) {
+        window.location.href = data.auth_url;
+      } else {
+        setError('Failed to get authentication URL');
+      }
+    } catch (e) {
+      console.error('Failed to get auth URL:', e);
+      setError('Failed to start reconnection process');
+    }
+  };
+
+  const fetchFinancialData = async () => {
+    if (!startDate || !endDate) {
+      setError('Please select a date range');
+      return;
     }
 
-    return () => {
-      if (interval) {
-        clearInterval(interval);
-      }
-    };
-  }, [analyzeLoading, loadingMessages.length]);
+    if (!realmId) {
+      setError('No company connection found. Please connect to QuickBooks first.');
+      return;
+    }
 
-  const fetchFinancialData = async (realm, type) => {
     try {
       setLoading(true);
+      setAiAnalysis(null); // Reset any previous AI analysis
+      console.log(`Fetching ${reportType} data for realm: ${realmId} from ${startDate} to ${endDate}`);
 
       // Determine which endpoint to call based on report type
       let endpoint;
-      switch (type) {
+      switch (reportType) {
         case 'profit-loss':
           endpoint = `/api/financial/statements/profit-loss`;
           break;
@@ -98,60 +129,54 @@ const VisualizationPage = () => {
           throw new Error('Invalid report type');
       }
 
-      const response = await fetch(`${endpoint}?realm_id=${realm}`);
+      // Build URL with appropriate parameters based on report type
+      // Build URL with appropriate parameters based on report type
+      const params = new URLSearchParams();
+      params.append('realm_id', realmId);
 
+      // Use same parameters for all report types for consistency
+      params.append('start_date', startDate);
+      params.append('end_date', endDate);
+
+      // Use URLSearchParams to properly encode parameters
+      const fullUrl = `${endpoint}?${params.toString()}`;
+
+      // Debug logs
+      console.log(`realmId value: "${realmId}"`);
+      console.log(`Full URL with params: ${fullUrl}`);
+
+      // Add timestamp to prevent caching issues
+      const timestamp = new Date().getTime();
+      const noCacheUrl = `${fullUrl}&_=${timestamp}`;
+
+      // Make the request
+      const response = await fetch(noCacheUrl);
       if (!response.ok) {
-        throw new Error(`Failed to fetch ${type} data`);
+        const errorText = await response.text();
+        console.error(`API response not OK: ${response.status} ${response.statusText}`);
+        console.error(`Error details: ${errorText}`);
+        throw new Error(`Failed to fetch ${reportType} data (${response.status}): ${errorText || response.statusText}`);
       }
 
-      const result = await response.json();
-      setData(result);
-      setLoading(false);
+      // Read response as text first to log it in case of parsing errors
+      const responseText = await response.text();
+      console.log(`Raw API response for ${reportType}:`, responseText);
 
-      // Start AI analysis immediately
-      analyzeData(result, type);
-    } catch (error) {
-      console.error(`Error fetching ${type} data:`, error);
-      setError(error.message);
-      setLoading(false);
-    }
-  };
-
-  const analyzeData = async (financialData, type) => {
-    try {
-      setAnalyzeLoading(true);
-      setAnalysis(null); // Clear previous analysis
-
-      const response = await fetch(`/api/financial/analyze/${type}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ data: financialData }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Analysis failed');
+      try {
+        // Then parse the JSON
+        const result = JSON.parse(responseText);
+        console.log(`Successfully parsed ${reportType} data:`, result);
+        setData(result);
+      } catch (parseError) {
+        console.error(`JSON parse error:`, parseError);
+        throw new Error(`Invalid JSON response: ${parseError.message}`);
       }
-
-      const result = await response.json();
-
-      // Add a slight delay to show the loading animation
-      // This helps avoid a jarring transition
-      setTimeout(() => {
-        setAnalysis(result);
-        setAnalyzeLoading(false);
-      }, 1000);
-
     } catch (error) {
-      console.error('Error analyzing data:', error);
-      setAnalyzeLoading(false);
-      setAnalysis({
-        error: 'Analysis failed',
-        summary: 'Unable to complete analysis at this time.',
-        insights: ['The financial analysis service is currently unavailable.'],
-        recommendations: ['Please try again later.'],
-      });
+      console.error(`Error fetching ${reportType} data:`, error);
+      handleAuthenticationError(error);
+      setError(error.message || 'Failed to retrieve financial data');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -159,8 +184,98 @@ const VisualizationPage = () => {
     navigate(`/dashboard?realm_id=${realmId}`);
   };
 
-  // Main render function
-  if (loading) {
+  const handleAnalyzeWithAI = async () => {
+    if (!data) {
+      setAnalysisError('No financial data to analyze');
+      return;
+    }
+
+    try {
+      setAnalysisLoading(true);
+      setAnalysisError(null);
+
+      const payload = {
+        data: data,
+        metadata: {
+          report_type: reportType,
+          realm_id: realmId,
+          period: reportType === 'balance-sheet'
+            ? { as_of_date: endDate }
+            : { start_date: startDate, end_date: endDate }
+        }
+      };
+
+      console.log(`Sending ${reportType} data for AI analysis`);
+      console.log('Analysis payload:', JSON.stringify(payload).slice(0, 500) + '...');
+
+      const endpoint = `/api/financial/analyze/${reportType}`;
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`AI analysis API response not OK: ${response.status} ${response.statusText}`);
+        console.error(`Error details: ${errorText}`);
+        throw new Error(`Failed to analyze data (${response.status}): ${errorText || response.statusText}`);
+      }
+
+      const analysisResult = await response.json();
+      console.log('AI Analysis result:', analysisResult);
+      setAiAnalysis(analysisResult);
+
+    } catch (error) {
+      console.error('Error analyzing data with AI:', error);
+      setAnalysisError(error.message || 'Failed to analyze data');
+    } finally {
+      setAnalysisLoading(false);
+    }
+  };
+  // Quick date range options
+  const handleQuickDateRange = (range) => {
+    const today = new Date();
+    let start, end;
+
+    switch (range) {
+      case 'thisMonth':
+        start = new Date(today.getFullYear(), today.getMonth(), 1);
+        end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        break;
+      case 'lastMonth':
+        start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        end = new Date(today.getFullYear(), today.getMonth(), 0);
+        break;
+      case 'thisQuarter':
+        const quarter = Math.floor(today.getMonth() / 3);
+        start = new Date(today.getFullYear(), quarter * 3, 1);
+        end = new Date(today.getFullYear(), quarter * 3 + 3, 0);
+        break;
+      case 'thisYear':
+        start = new Date(today.getFullYear(), 0, 1);
+        end = new Date(today.getFullYear(), 11, 31);
+        break;
+      case 'lastYear':
+        start = new Date(today.getFullYear() - 1, 0, 1);
+        end = new Date(today.getFullYear() - 1, 11, 31);
+        break;
+      default:
+        return;
+    }
+
+    const formatDate = (date) => {
+      return date.toISOString().split('T')[0];
+    };
+
+    setStartDate(formatDate(start));
+    setEndDate(formatDate(end));
+  };
+
+  if (loading && data) {
     return (
       <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-6">
         <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mb-4"></div>
@@ -169,12 +284,22 @@ const VisualizationPage = () => {
     );
   }
 
-  if (error) {
+  if (error && !data) {
     return (
       <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-6">
         <div className="bg-red-900 bg-opacity-50 p-6 rounded-lg max-w-xl">
           <h2 className="text-2xl font-bold text-white mb-4">Error</h2>
           <p className="text-gray-300">{error}</p>
+
+          {reconnectNeeded ? (
+            <button
+              onClick={handleReconnect}
+              className="mt-6 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded mr-4"
+            >
+              Reconnect to QuickBooks
+            </button>
+          ) : null}
+
           <button
             onClick={handleBackToDashboard}
             className="mt-6 bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded"
@@ -185,6 +310,11 @@ const VisualizationPage = () => {
       </div>
     );
   }
+  // Check if we have the NoReportData flag
+  const hasNoReportData = data &&
+    data.Header &&
+    data.Header.Option &&
+    data.Header.Option.some(opt => opt.Name === "NoReportData" && opt.Value === "true");
 
   return (
     <div className="min-h-screen bg-gray-900 p-4">
@@ -203,46 +333,204 @@ const VisualizationPage = () => {
           </button>
         </div>
 
-        {/* AI Analysis Section */}
-        <div className="bg-gradient-to-r from-purple-900 to-blue-900 rounded-xl overflow-hidden shadow-xl mb-8">
-          <div className="p-6">
-            <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
-              <span className="mr-2">🤖</span> AI Analysis
-            </h2>
+        {/* Connection Info */}
+        {/* Connection Info */}
+        <div className="bg-gray-800 rounded-xl p-6 mb-6">
+          <h2 className="text-xl font-bold text-white mb-4">Connection Information</h2>
+          <div className="bg-gray-700 p-4 rounded">
+            <p className="text-gray-300">Realm ID: {realmId || 'Not set'}</p>
+            <p className="text-gray-300">
+              Date Range: {startDate || 'Not set'} to {endDate || 'Not set'}
+            </p>
+            <p className="text-gray-300">Report Type: {reportTitles[reportType]}</p>
+          </div>
+        </div>
+        {/* Date Range Selector */}
+        <div className="bg-gray-800 rounded-xl p-6 mb-6">
+          <h2 className="text-xl font-bold text-white mb-4">
+            {reportType === 'balance-sheet' ? 'Select Date' : 'Select Date Range'}
+          </h2>
 
-            {analyzeLoading ? (
-              <div className="flex flex-col items-center justify-center p-8">
-                <DataVortex />
-                <div className="mt-6 text-center">
-                  <p className="text-xl font-semibold text-blue-200 mb-2">
-                    {loadingMessages[currentMessageIndex]}
-                  </p>
-                  <p className="text-sm text-blue-300 animate-pulse">
-                    This may take a minute as we're using advanced AI to analyze your data
-                  </p>
-                </div>
+          {/* Quick date options */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            <button
+              onClick={() => handleQuickDateRange('thisMonth')}
+              className="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm"
+            >
+              This Month
+            </button>
+            <button
+              onClick={() => handleQuickDateRange('lastMonth')}
+              className="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm"
+            >
+              Last Month
+            </button>
+            <button
+              onClick={() => handleQuickDateRange('thisQuarter')}
+              className="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm"
+            >
+              This Quarter
+            </button>
+            <button
+              onClick={() => handleQuickDateRange('thisYear')}
+              className="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm"
+            >
+              This Year
+            </button>
+            <button
+              onClick={() => handleQuickDateRange('lastYear')}
+              className="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm"
+            >
+              Last Year
+            </button>
+          </div>
+
+          {/* Date inputs */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label htmlFor="start-date" className="block text-gray-300 mb-1">Start Date</label>
+              <input
+                id="start-date"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full bg-gray-700 text-white border border-gray-600 rounded px-3 py-2"
+              />
+            </div>
+            <div>
+              <label htmlFor="end-date" className="block text-gray-300 mb-1">End Date</label>
+              <input
+                id="end-date"
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full bg-gray-700 text-white border border-gray-600 rounded px-3 py-2"
+              />
+            </div>
+          </div>
+
+          {/* Apply button */}
+          <button
+            onClick={fetchFinancialData}
+            className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded"
+          >
+            Apply Date Range
+          </button>
+        </div>
+
+        {/* No data warning */}
+        {hasNoReportData && (
+          <div className="bg-yellow-900 bg-opacity-50 p-4 rounded-lg mb-6">
+            <div className="flex items-start">
+              <svg className="w-6 h-6 text-yellow-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <div>
+                <h3 className="text-lg font-semibold text-white">No Report Data Available</h3>
+                <p className="text-gray-300 mt-1">
+                  QuickBooks is reporting that there is no data available for this report period.
+                  Please try a different date range or check your QuickBooks account for transactions.
+                </p>
               </div>
-            ) : (
-              analysis ? (
-                <FinancialInsights insights={analysis} />
-              ) : (
-                <div className="text-center p-6 text-gray-300">
-                  <p>Analysis not available. Please try again.</p>
+            </div>
+          </div>
+        )}
+
+        {/* AI Analysis Section */}
+        {data && !hasNoReportData && (
+          <div className="mb-8">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-white">AI Analysis</h2>
+              <button
+                onClick={handleAnalyzeWithAI}
+                disabled={analysisLoading}
+                className={`${analysisLoading
+                  ? 'bg-purple-800 cursor-not-allowed'
+                  : 'bg-purple-600 hover:bg-purple-700'
+                  } text-white py-2 px-4 rounded-md flex items-center`}
+              >
+                {analysisLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    <span role="img" aria-label="AI" className="mr-2">🤖</span>
+                    Analyze with AI
+                  </>
+                )}
+              </button>
+            </div>
+
+            {analysisError && (
+              <div className="bg-red-900 bg-opacity-50 p-4 rounded-lg mb-4">
+                <p className="text-white">{analysisError}</p>
+              </div>
+            )}
+
+            {aiAnalysis && (
+              <div className="bg-gray-800 rounded-xl p-6">
+                <h3 className="text-xl font-bold text-white mb-3">Financial Insights</h3>
+
+                {/* Summary */}
+                <div className="mb-6">
+                  <h4 className="text-lg font-semibold text-gray-300 mb-2">Summary</h4>
+                  <p className="text-gray-300">{aiAnalysis.summary}</p>
                 </div>
-              )
+
+                {/* Key Insights */}
+                {aiAnalysis.insights && aiAnalysis.insights.length > 0 && (
+                  <div className="mb-6">
+                    <h4 className="text-lg font-semibold text-gray-300 mb-2">Key Insights</h4>
+                    <ul className="list-disc pl-5 text-gray-300">
+                      {aiAnalysis.insights.map((insight, index) => (
+                        <li key={index} className="mb-1">{insight}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Recommendations */}
+                {aiAnalysis.recommendations && aiAnalysis.recommendations.length > 0 && (
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-300 mb-2">Recommendations</h4>
+                    <ul className="list-disc pl-5 text-gray-300">
+                      {aiAnalysis.recommendations.map((rec, index) => (
+                        <li key={index} className="mb-1">{rec}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!aiAnalysis && !analysisLoading && !analysisError && (
+              <div className="bg-gray-800 rounded-xl p-6 text-center">
+                <p className="text-gray-400">
+                  Click "Analyze with AI" to get insights and recommendations based on your financial data.
+                </p>
+              </div>
             )}
           </div>
-        </div>
+        )}
 
-        {/* Financial Data Visualization (placeholder for now) */}
-        <div className="bg-gray-800 rounded-xl p-6 mb-8">
-          <h2 className="text-xl font-bold text-white mb-4">Financial Visualization</h2>
-          <div className="bg-gray-700 p-4 rounded">
-            <pre className="text-gray-300 overflow-auto max-h-96 text-sm">
-              {JSON.stringify(data, null, 2)}
-            </pre>
+        {/* Raw Financial Data Display */}
+        {data && (
+          <div className="bg-gray-800 rounded-xl p-6 mb-8">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-white">Raw Financial Data</h2>
+            </div>
+            <p className="text-gray-400 mb-4">
+              This is the raw JSON data from your QuickBooks account.
+            </p>
+            <div className="bg-gray-700 p-4 rounded">
+              <pre className="text-gray-300 overflow-auto max-h-96 text-sm">
+                {JSON.stringify(data, null, 2)}
+              </pre>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
